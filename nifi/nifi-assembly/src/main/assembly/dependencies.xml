@@ -103,7 +103,12 @@
             </includes>
             <unpack>true</unpack>
             <unpackOptions>
-                <filtered>false</filtered>
+                <filtered>true</filtered>
+                <excludes>
+                  <!-- LICENSE and NOTICE both covered by top-level -->
+                  <exclude>LICENSE</exclude>
+                  <exclude>NOTICE</exclude>
+                </excludes>
             </unpackOptions>
         </dependencySet>                
     </dependencySets>
