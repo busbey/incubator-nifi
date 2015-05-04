@@ -71,10 +71,16 @@ function nifiproject_postcheckout
   local parent_built=false
   if [[ "nifi" == ${NIFI_SUBPROJECT} ]]; then
     nifiproject_private_build_parent 'nifi/pom.xml'
+    if [[ $? != 0 ]]; then
+      return 1
+    fi
     ${GREP} -A 1 "nifi-nar-maven-plugin" nifi/pom.xml | ${GREP} "SNAPSHOT" >/dev/null
     if [[ $? == 0 ]]; then
       hadoop_debug "nifi pom is based on a SNAPSHOT version of nifi-nar-plugin, building."
       nifiproject_private_build_parent 'nifi-nar-maven-plugin/pom.xml'
+      if [[ $? != 0 ]]; then
+        return 1
+      fi
       echo_and_redirect "${PATCH_DIR}/nifi_${PATCH_BRANCH}_nar-plugin_JavacWarnings.txt" "${MVN}" --file nifi-nar-maven-plugin/pom.xml install
       if [[ $? != 0 ]]; then
         hadoop_error "nifi pom needs an updated nar-plugin SNAPSHOT build, but it failed."
