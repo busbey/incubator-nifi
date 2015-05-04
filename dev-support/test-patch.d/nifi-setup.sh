@@ -43,9 +43,45 @@ function nifiproject_filefilter
   done
 }
 
+NIFI_BUILT_PARENT=false
+
+function nifiproject_private_build_parent
+{
+  local pom=$1
+  ${GREP} -A 1 "nifi-parent" "${pom}" | ${GREP} "SNAPSHOT" >/dev/null
+  if [[ $? == 0 ]]; then
+    if [[ ${NIFI_BUILT_PARENT} == "true" ]]; then
+      hadoop_debug "pom '${pom}' is based on a SNAPSHOT version of parent, but we already built it."
+      return 0
+    fi
+    hadoop_debug "pom '${pom}' is based on a SNAPSHOT version of parent, building."
+    ${MVN} --file nifi-parent/pom.xml install
+    if [[ $? == 0 ]]; then
+      NIFI_BUILT_PARENT=true
+    else
+      hadoop_error "nifi pom needs an updated parent SNAPSHOT build, but it failed."
+      return 1
+    fi
+  fi
+}
+
 ## @description once checkout is done, change to the subproject
 function nifiproject_postcheckout
 {
+  local parent_built=false
+  if [[ "nifi" == ${NIFI_SUBPROJECT} ]]; then
+    nifiproject_private_build_parent 'nifi/pom.xml'
+    ${GREP} -A 1 "nifi-nar-maven-plugin" nifi/pom.xml | ${GREP} "SNAPSHOT" >/dev/null
+    if [[ $? == 0 ]]; then
+      hadoop_debug "nifi pom is based on a SNAPSHOT version of nifi-nar-plugin, building."
+      nifiproject_private_build_parent 'nifi-nar-maven-plugin/pom.xml'
+      ${MVN} --file nifi-nar-maven-plugin/pom.xml install
+      if [[ $? != 0 ]]; then
+        hadoop_error "nifi pom needs an updated nar-plugin SNAPSHOT build, but it failed."
+        return 1
+      fi
+    fi
+  fi
   if [[ -n ${NIFI_SUBPROJECT} ]]; then
     hadoop_debug "changing into subproject ${NIFI_SUBPROJECT}"
     pushd "${NIFI_SUBPROJECT}"
