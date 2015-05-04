@@ -55,7 +55,7 @@ function nifiproject_private_build_parent
       return 0
     fi
     hadoop_debug "pom '${pom}' is based on a SNAPSHOT version of parent, building."
-    echo_and_redirect "${PATCH_DIR}/nifi_${PATCH_BRANCH}_parent_JavacWarnings.txt" "${MVN}" --file nifi-parent/pom.xml install
+    echo_and_redirect "${PATCH_DIR}/nifi_${PATCH_BRANCH}_parent_JavacWarnings.txt" "${MVN}" ${MAVEN_ARGS} --file nifi-parent/pom.xml install
     if [[ $? == 0 ]]; then
       NIFI_BUILT_PARENT=true
     else
@@ -81,7 +81,7 @@ function nifiproject_postcheckout
       if [[ $? != 0 ]]; then
         return 1
       fi
-      echo_and_redirect "${PATCH_DIR}/nifi_${PATCH_BRANCH}_nar-plugin_JavacWarnings.txt" "${MVN}" --file nifi-nar-maven-plugin/pom.xml install
+      echo_and_redirect "${PATCH_DIR}/nifi_${PATCH_BRANCH}_nar-plugin_JavacWarnings.txt" "${MVN}" ${MAVEN_ARGS} --file nifi-nar-maven-plugin/pom.xml install
       if [[ $? != 0 ]]; then
         hadoop_error "nifi pom needs an updated nar-plugin SNAPSHOT build, but it failed."
         return 1
