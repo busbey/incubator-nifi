@@ -69,6 +69,11 @@ function nifiproject_private_build_parent
 function nifiproject_postcheckout
 {
   local parent_built=false
+  local retval=0
+
+  big_console_header "setting up for NiFi build structure"
+
+  start_clock
   if [[ "nifi" == ${NIFI_SUBPROJECT} ]]; then
     nifiproject_private_build_parent 'nifi/pom.xml'
     if [[ $? != 0 ]]; then
@@ -91,7 +96,20 @@ function nifiproject_postcheckout
   if [[ -n ${NIFI_SUBPROJECT} ]]; then
     hadoop_debug "changing into subproject ${NIFI_SUBPROJECT}"
     pushd "${NIFI_SUBPROJECT}"
+    verify_needed_test javac
+    if [[ $? != 0 ]]; then
+      hadoop_debug "we're going to do a javac check, so do a mvn install now since our non-package build references packages bits of earlier modules."
+      echo_and_redirect "${PATCH_DIR}/nifi_${PATCH_BATCH}_jarinstall.txt" "${MVN}" ${MAVEN_ARGS} install -Dmaven.javadoc.skip=true -DskipTests -D${PROJECT_NAME}PatchProcess
+      retval=$?
+    fi
   fi
+
+  if [[ ${retval} != 0 ]]; then
+    add_jira_table -1 nifi_build "setting up nifi build structure broken for branch '${PATCH_BRANCH}'?"
+  else
+    add_jira_table 0 nifi_build "setting up nifi build structure worked."
+  fi
+  return ${retval}
 }
 
 ## @description to apply the patch we need to be in the top level
